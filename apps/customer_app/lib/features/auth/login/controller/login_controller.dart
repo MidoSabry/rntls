@@ -4,10 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/shared_core.dart';
 
 import '../../../../app/providers.dart';
+import '../../../../core/customer_errror/error_extensions.dart';
+import '../../../../core/customer_network/app_response.dart';
+import '../domain/auth_repository.dart';
 import 'login_state.dart';
 
-final loginControllerProvider =
-    NotifierProvider<LoginController, LoginState>(LoginController.new);
+final loginControllerProvider = NotifierProvider<LoginController, LoginState>(
+  LoginController.new,
+);
 
 class LoginController extends Notifier<LoginState> {
   @override
@@ -18,7 +22,11 @@ class LoginController extends Notifier<LoginState> {
   }
 
   void setPassword(String v) {
-    state = state.copyWith(password: v, passwordError: null, generalError: null);
+    state = state.copyWith(
+      password: v,
+      passwordError: null,
+      generalError: null,
+    );
   }
 
   String? _validateEmail(String email) {
@@ -51,34 +59,36 @@ class LoginController extends Notifier<LoginState> {
     state = state.copyWith(isLoading: true, generalError: null);
 
     final repo = ref.read(authRepositoryProvider);
+    final result = await repo.login(
+      email: state.email.trim(),
+      password: state.password,
+    );
 
-    try {
-      await repo.login(
-        email: state.email.trim(),
-        password: state.password,
-      );
+    state = state.copyWith(isLoading: false);
 
-      state = state.copyWith(isLoading: false);
+    if (result is AppSuccess<AuthTokens>) {
       return true;
-    } catch (e) {
-      final failure = e is Failure ? e : ErrorMapper.toFailure(e);
+    }
 
-      if (failure is ValidationFailure && failure.fields != null) {
-        final fields = failure.fields!;
-        state = state.copyWith(
-          isLoading: false,
-          emailError: fields['email']?.toString(),
-          passwordError: fields['password']?.toString(),
-          generalError: failure.message,
-        );
-        return false;
-      }
+    final failure = (result as AppFailure<AuthTokens>).failure;
 
+    // ✅ Validation: خليها Inline
+    if (failure is ValidationFailure && failure.fields != null) {
+      final fields = failure.fields!;
       state = state.copyWith(
-        isLoading: false,
-        generalError: failure.message,
+        emailError: fields['email']?.toString(),
+        passwordError: fields['password']?.toString(),
+        generalError: failure.message, // لو تحب banner فوق
       );
       return false;
     }
+
+    // ✅ باقي الأخطاء: Global Dialog
+    ref.emitFailure(failure);
+    return false;
+  }
+
+  void clearFailure() {
+    state = state.copyWith(lastFailure: null);
   }
 }

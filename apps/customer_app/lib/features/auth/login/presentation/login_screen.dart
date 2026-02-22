@@ -9,22 +9,30 @@ import '../controller/login_controller.dart';
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
 
+  Future<void> _submit(BuildContext context, WidgetRef ref) async {
+    // close keyboard
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    // avoid double submit
+    final state = ref.read(loginControllerProvider);
+    if (state.isLoading) return;
+
+    final ok = await ref.read(loginControllerProvider.notifier).submit();
+    if (!ok) return;
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Logged in ✅')),
+    );
+
+    // TODO: Navigator.pushReplacement(Home)
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(loginControllerProvider);
-
-    Future<void> onSubmit() async {
-      final ok = await ref.read(loginControllerProvider.notifier).submit();
-      if (!ok) return;
-
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Logged in ✅')),
-      );
-
-      // TODO: Navigator.pushReplacement(Home)
-    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -46,44 +54,44 @@ class LoginScreen extends ConsumerWidget {
 
               const SizedBox(height: 28),
 
-              if (state.generalError != null) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF2F2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFFFC7C7)),
-                  ),
-                  child: Text(
-                    state.generalError!,
-                    style: const TextStyle(color: Color(0xFFB00020)),
-                  ),
+              // if (state.generalError != null) ...[
+              //   _ErrorBanner(message: state.generalError!),
+              //   const SizedBox(height: 12),
+              // ],
+
+              AutofillGroup(
+                child: Column(
+                  children: [
+                    SharedTextField(
+                      key: const ValueKey('login_email'),
+                      label: 'Email',
+                      hint: 'rntls@gmail.com',
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      prefix: const Icon(Icons.email_outlined),
+                      errorText: state.emailError,
+                      // autofillHints: const [AutofillHints.username, AutofillHints.email],
+                      onChanged:
+                          ref.read(loginControllerProvider.notifier).setEmail,
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    SharedTextField(
+                      key: const ValueKey('login_password'),
+                      label: 'Password',
+                      hint: '********',
+                      isPassword: true,
+                      textInputAction: TextInputAction.done,
+                      prefix: const Icon(Icons.lock_outline),
+                      errorText: state.passwordError,
+                      // autofillHints: const [AutofillHints.password],
+                      onChanged:
+                          ref.read(loginControllerProvider.notifier).setPassword,
+                      onSubmitted: (_) => _submit(context, ref),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-              ],
-
-              SharedTextField(
-                label: 'Email',
-                hint: 'rntls@gmail.com',
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                prefix: const Icon(Icons.email_outlined),
-                errorText: state.emailError,
-                onChanged: ref.read(loginControllerProvider.notifier).setEmail,
-              ),
-
-              const SizedBox(height: 14),
-
-              SharedTextField(
-                label: 'Password',
-                hint: '********',
-                isPassword: true,
-                textInputAction: TextInputAction.done,
-                prefix: const Icon(Icons.lock_outline),
-                errorText: state.passwordError,
-                onChanged: ref.read(loginControllerProvider.notifier).setPassword,
-                onSubmitted: (_) => onSubmit(),
               ),
 
               const SizedBox(height: 10),
@@ -91,7 +99,9 @@ class LoginScreen extends ConsumerWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: state.isLoading ? null : () {
+                    // TODO: navigate to forgot password
+                  },
                   child: const Text('Forgot password?'),
                 ),
               ),
@@ -100,7 +110,7 @@ class LoginScreen extends ConsumerWidget {
 
               SharedButton(
                 label: 'Sign in',
-                onPressed: state.isLoading ? null : onSubmit,
+                onPressed: state.isLoading ? null : () => _submit(context, ref),
                 isLoading: state.isLoading,
                 variant: SharedButtonVariant.filled,
                 rounded: false,
@@ -118,12 +128,16 @@ class LoginScreen extends ConsumerWidget {
                 children: [
                   _SocialIconButton(
                     asset: 'assets/images/google.png',
-                    onTap: () {},
+                    onTap: state.isLoading ? null : () {
+                      // TODO: google sign in
+                    },
                   ),
                   const SizedBox(width: 12),
                   _SocialIconButton(
                     asset: 'assets/images/apple.png',
-                    onTap: () {},
+                    onTap: state.isLoading ? null : () {
+                      // TODO: apple sign in
+                    },
                   ),
                 ],
               ),
@@ -136,7 +150,9 @@ class LoginScreen extends ConsumerWidget {
                   const Text('New to RNTLS? '),
                   SharedButton(
                     label: 'Sign up',
-                    onPressed: () {},
+                    onPressed: state.isLoading ? null : () {
+                      // TODO: navigate to sign up
+                    },
                     variant: SharedButtonVariant.text,
                     fullWidth: false,
                     rounded: true,
@@ -170,9 +186,31 @@ class LoginScreen extends ConsumerWidget {
   }
 }
 
+// class _ErrorBanner extends StatelessWidget {
+//   final String message;
+//   const _ErrorBanner({required this.message});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       width: double.infinity,
+//       padding: const EdgeInsets.all(12),
+//       decoration: BoxDecoration(
+//         color: const Color(0xFFFFF2F2),
+//         borderRadius: BorderRadius.circular(12),
+//         border: Border.all(color: const Color(0xFFFFC7C7)),
+//       ),
+//       child: Text(
+//         message,
+//         style: const TextStyle(color: Color(0xFFB00020)),
+//       ),
+//     );
+//   }
+// }
+
 class _SocialIconButton extends StatelessWidget {
   final String asset;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _SocialIconButton({
     required this.asset,
@@ -184,14 +222,17 @@ class _SocialIconButton extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFE6E6E6)),
+      child: Opacity(
+        opacity: onTap == null ? 0.6 : 1,
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFFE6E6E6)),
+          ),
+          child: Center(child: Image.asset(asset, width: 22, height: 22)),
         ),
-        child: Center(child: Image.asset(asset, width: 22, height: 22)),
       ),
     );
   }

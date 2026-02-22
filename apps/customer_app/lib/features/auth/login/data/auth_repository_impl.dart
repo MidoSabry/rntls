@@ -1,8 +1,11 @@
 // apps/customer_app/lib/features/auth/data/auth_repository_impl.dart
 
+import 'package:customer_app/core/customer_network/app_response.dart';
 import 'package:customer_app/features/auth/login/data/session_repository_impl.dart';
 import 'package:shared_core/shared_core.dart';
 
+import '../../../../app/constants/api_endpoints_constants.dart';
+import '../../../../core/customer_network/response_helper.dart';
 import '../domain/auth_repository.dart';
 import 'login_request_model.dart';
 
@@ -15,20 +18,47 @@ class AuthRepositoryImpl implements AuthRepository {
     required this.session,
   });
 
-  @override
-  Future<AuthTokens> login({
-    required String email,
-    required String password,
-  }) async {
+  // @override
+  // Future<AuthTokens> login({
+  //   required String email,
+  //   required String password,
+  // }) async {
+  //   final req = LoginRequest(email: email, password: password);
+
+  //   final data = await api.post<LoginDataDto>(
+  //     '/api/login/',
+  //     body: req.toJson(),
+  //     fromJson: (json) => LoginDataDto.fromJson(json as Map<String, dynamic>),
+  //   );
+
+  //   // Save for AuthInterceptor
+  //   await session.saveTokens(
+  //     accessToken: data.token,
+  //     refreshToken: data.refreshToken,
+  //   );
+
+  //   return AuthTokens(
+  //     accessToken: data.token,
+  //     refreshToken: data.refreshToken,
+  //   );
+  // }
+
+
+
+  // AuthRepositoryImpl.login
+Future<AppResponse<AuthTokens>> login({
+  required String email,
+  required String password,
+}) {
+  return responseHelper(() async {
     final req = LoginRequest(email: email, password: password);
 
     final data = await api.post<LoginDataDto>(
-      '/api/login/',
+      ApiEndpointsConstants.loginEndpoint,
       body: req.toJson(),
       fromJson: (json) => LoginDataDto.fromJson(json as Map<String, dynamic>),
     );
 
-    // Save for AuthInterceptor
     await session.saveTokens(
       accessToken: data.token,
       refreshToken: data.refreshToken,
@@ -38,5 +68,6 @@ class AuthRepositoryImpl implements AuthRepository {
       accessToken: data.token,
       refreshToken: data.refreshToken,
     );
-  }
+  });
+}
 }
