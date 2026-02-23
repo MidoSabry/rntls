@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_ui/shared_ui.dart';
 
+import '../../register/presentation/screens/registration_flow_screen.dart';
 import '../controller/login_controller.dart';
 
 class LoginScreen extends ConsumerWidget {
@@ -23,9 +24,9 @@ class LoginScreen extends ConsumerWidget {
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Logged in ✅')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Logged in ✅')));
 
     // TODO: Navigator.pushReplacement(Home)
   }
@@ -58,7 +59,6 @@ class LoginScreen extends ConsumerWidget {
               //   _ErrorBanner(message: state.generalError!),
               //   const SizedBox(height: 12),
               // ],
-
               AutofillGroup(
                 child: Column(
                   children: [
@@ -71,8 +71,9 @@ class LoginScreen extends ConsumerWidget {
                       prefix: const Icon(Icons.email_outlined),
                       errorText: state.emailError,
                       // autofillHints: const [AutofillHints.username, AutofillHints.email],
-                      onChanged:
-                          ref.read(loginControllerProvider.notifier).setEmail,
+                      onChanged: ref
+                          .read(loginControllerProvider.notifier)
+                          .setEmail,
                     ),
 
                     const SizedBox(height: 14),
@@ -86,8 +87,9 @@ class LoginScreen extends ConsumerWidget {
                       prefix: const Icon(Icons.lock_outline),
                       errorText: state.passwordError,
                       // autofillHints: const [AutofillHints.password],
-                      onChanged:
-                          ref.read(loginControllerProvider.notifier).setPassword,
+                      onChanged: ref
+                          .read(loginControllerProvider.notifier)
+                          .setPassword,
                       onSubmitted: (_) => _submit(context, ref),
                     ),
                   ],
@@ -99,9 +101,11 @@ class LoginScreen extends ConsumerWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: state.isLoading ? null : () {
-                    // TODO: navigate to forgot password
-                  },
+                  onPressed: state.isLoading
+                      ? null
+                      : () {
+                          // TODO: navigate to forgot password
+                        },
                   child: const Text('Forgot password?'),
                 ),
               ),
@@ -128,16 +132,20 @@ class LoginScreen extends ConsumerWidget {
                 children: [
                   _SocialIconButton(
                     asset: 'assets/images/google.png',
-                    onTap: state.isLoading ? null : () {
-                      // TODO: google sign in
-                    },
+                    onTap: state.isLoading
+                        ? null
+                        : () {
+                            // TODO: google sign in
+                          },
                   ),
                   const SizedBox(width: 12),
                   _SocialIconButton(
                     asset: 'assets/images/apple.png',
-                    onTap: state.isLoading ? null : () {
-                      // TODO: apple sign in
-                    },
+                    onTap: state.isLoading
+                        ? null
+                        : () {
+                            // TODO: apple sign in
+                          },
                   ),
                 ],
               ),
@@ -150,9 +158,16 @@ class LoginScreen extends ConsumerWidget {
                   const Text('New to RNTLS? '),
                   SharedButton(
                     label: 'Sign up',
-                    onPressed: state.isLoading ? null : () {
-                      // TODO: navigate to sign up
-                    },
+                    onPressed: state.isLoading
+                        ? null
+                        : () {
+                            // TODO: navigate to sign up
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const RegistrationFlowScreen(),
+                              ),
+                            );
+                          },
                     variant: SharedButtonVariant.text,
                     fullWidth: false,
                     rounded: true,
@@ -212,10 +227,7 @@ class _SocialIconButton extends StatelessWidget {
   final String asset;
   final VoidCallback? onTap;
 
-  const _SocialIconButton({
-    required this.asset,
-    required this.onTap,
-  });
+  const _SocialIconButton({required this.asset, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

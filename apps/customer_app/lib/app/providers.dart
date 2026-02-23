@@ -8,6 +8,8 @@ import '../core/customer_network/app_error_presenter.dart';
 import '../features/auth/login/data/session_repository_impl.dart';
 import '../features/auth/login/domain/auth_repository.dart';
 import '../features/auth/login/data/auth_repository_impl.dart';
+import '../features/auth/register/data/registration_repository_impl.dart';
+import '../features/auth/register/domain/registration_repository.dart';
 import 'constants/api_endpoints_constants.dart';
 
 final sharedPrefsProvider = Provider<SharedPreferences>((ref) {
@@ -68,4 +70,15 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
     api: ref.watch(apiClientProvider),
     session: ref.watch(localSessionRepositoryProvider),
   );
+});
+
+
+final registrationRepositoryProvider = Provider<RegistrationRepository>((ref) {
+  return RegistrationRepositoryImpl(
+    api: ref.watch(apiClientProvider),
+  );
+});
+
+final locationServiceProvider = Provider<LocationService>((ref) {
+  return LocationService();
 });

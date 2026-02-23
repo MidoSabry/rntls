@@ -31,3 +31,6 @@ export 'src/inspector/inspector_ui/inspector_store_notifier.dart';
 export 'src/inspector/inspector_ui/inspector_floating_button.dart';
 export 'src/inspector/inspector_ui/inspector_screen.dart';
 export 'src/inspector/inspector_ui/ofloating_action_button.dart';
+
+//Location
+export 'src/location/location_service.dart';
