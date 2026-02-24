@@ -3,10 +3,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/shared_core.dart';
 
-import '../../../../app/providers.dart';
-import '../../../../core/customer_errror/error_extensions.dart';
-import '../../../../core/customer_network/app_response.dart';
-import '../domain/auth_repository.dart';
+import '../../../../../app/providers.dart';
+import '../../../../../core/error_handler/error_extensions.dart';
+import '../../domain/auth_repository.dart';
 import 'login_state.dart';
 
 final loginControllerProvider = NotifierProvider<LoginController, LoginState>(
@@ -83,7 +82,6 @@ class LoginController extends Notifier<LoginState> {
       return false;
     }
 
-    // ✅ باقي الأخطاء: Global Dialog
     ref.emitFailure(failure);
     return false;
   }

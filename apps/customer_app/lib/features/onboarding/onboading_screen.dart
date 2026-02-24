@@ -1,4 +1,4 @@
-import 'package:customer_app/features/auth/login/presentation/login_screen.dart';
+import 'package:customer_app/features/auth/login/presentation/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_ui/shared_ui.dart';
 

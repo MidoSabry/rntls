@@ -1,6 +1,6 @@
-// apps/customer_app/lib/features/auth/domain/auth_repository.dart
 
-import '../../../../core/customer_network/app_response.dart';
+
+import 'package:shared_core/shared_core.dart';
 
 class AuthTokens {
   final String accessToken;

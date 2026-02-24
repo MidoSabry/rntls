@@ -1,9 +1,10 @@
+import 'package:customer_app/core/navigation/root_nav_key.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../navigation/app_navigator.dart';
 import 'app_error.dart';
 import 'error_bus.dart';
+
 
 class AppGlobalErrorListener extends ConsumerStatefulWidget {
   final Widget child;
@@ -14,7 +15,8 @@ class AppGlobalErrorListener extends ConsumerStatefulWidget {
       _AppGlobalErrorListenerState();
 }
 
-class _AppGlobalErrorListenerState extends ConsumerState<AppGlobalErrorListener> {
+class _AppGlobalErrorListenerState
+    extends ConsumerState<AppGlobalErrorListener> {
   bool _sheetOpen = false;
 
   @override

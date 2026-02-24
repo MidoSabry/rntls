@@ -1,4 +1,4 @@
-import 'package:customer_app/core/customer_network/app_response.dart';
+import 'package:shared_core/src/network/response/app_response.dart';
 
 import 'registration_draft.dart';
 

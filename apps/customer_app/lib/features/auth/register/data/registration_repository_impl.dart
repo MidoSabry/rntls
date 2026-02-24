@@ -1,8 +1,7 @@
-import 'package:customer_app/core/customer_network/app_response.dart';
+import 'package:shared_core/src/network/response/app_response.dart';
 import 'package:shared_core/shared_core.dart';
 
 import '../../../../app/constants/api_endpoints_constants.dart';
-import '../../../../core/customer_network/response_helper.dart';
 import '../domain/registration_draft.dart';
 import '../domain/registration_repository.dart';
 import 'models/register_customer_models.dart';

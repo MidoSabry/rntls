@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/shared_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../core/customer_network/app_error_presenter.dart';
 import '../features/auth/login/data/session_repository_impl.dart';
 import '../features/auth/login/domain/auth_repository.dart';
 import '../features/auth/login/data/auth_repository_impl.dart';

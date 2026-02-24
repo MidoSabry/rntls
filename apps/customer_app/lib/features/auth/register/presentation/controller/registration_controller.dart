@@ -2,8 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/shared_core.dart';
 
 import '../../../../../app/providers.dart';
-import '../../../../../core/customer_errror/error_extensions.dart';
-import '../../../../../core/customer_network/app_response.dart';
+import '../../../../../core/error_handler/error_extensions.dart';
 import '../../domain/registration_repository.dart';
 import '../../domain/registration_step.dart';
 import 'registration_state.dart';
@@ -98,6 +97,12 @@ class RegistrationController extends Notifier<RegistrationState> {
 
   String? _fieldMsg(Map<String, dynamic> fields, String key) {
     final v = fields[key];
+    if (v == null) return null;
+    if (v is List && v.isNotEmpty) return v.first.toString();
+    return v.toString();
+  }
+
+  String? _addErrorMsg(dynamic v) {
     if (v == null) return null;
     if (v is List && v.isNotEmpty) return v.first.toString();
     return v.toString();
@@ -228,6 +233,10 @@ class RegistrationController extends Notifier<RegistrationState> {
     }
 
     final failure = (res as AppFailure<OtpSendResult>).failure;
+    if (failure is ValidationFailure && failure.fields != null) {
+      final phoneMsg = _addErrorMsg(failure.fields!['phone']);
+      ref.emitFailure(failure, messageOverride: phoneMsg);
+    }
     ref.emitFailure(failure);
   }
 
@@ -472,34 +481,28 @@ class RegistrationController extends Notifier<RegistrationState> {
     ref.emitFailure(failure);
   }
 
-
-
   // -------------------------
-  // Location 
+  // Location
   // -------------------------
 
   Future<void> fillAddressFromCurrentLocation() async {
-  if (state.isLoading) return;
+    if (state.isLoading) return;
 
-  state = state.copyWith(isLoading: true, addressError: null);
+    state = state.copyWith(isLoading: true, addressError: null);
 
-  try {
-    final loc = await ref.read(locationServiceProvider).getCurrentLocation();
+    try {
+      final loc = await ref.read(locationServiceProvider).getCurrentLocation();
 
-    setAddress(
-      address: loc.address,
-      lat: loc.lat,
-      lng: loc.lng,
-    );
+      setAddress(address: loc.address, lat: loc.lat, lng: loc.lng);
 
-    state = state.copyWith(isLoading: false);
-  } catch (e) {
-    state = state.copyWith(
-      isLoading: false,
-      addressError: e.toString().replaceFirst('Exception: ', ''),
-    );
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        addressError: e.toString().replaceFirst('Exception: ', ''),
+      );
+    }
   }
-}
 
   Future<void> resendEmailOtp() async {
     if (state.isLoading) return;

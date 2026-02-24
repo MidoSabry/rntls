@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_ui/shared_ui.dart';
 
-import '../../register/presentation/screens/registration_flow_screen.dart';
+import '../../../register/presentation/screens/registration_flow_screen.dart';
 import '../controller/login_controller.dart';
 
 class LoginScreen extends ConsumerWidget {

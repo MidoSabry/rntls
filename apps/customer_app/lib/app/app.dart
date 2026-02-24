@@ -1,11 +1,11 @@
 import 'package:customer_app/app/providers.dart';
-import 'package:customer_app/core/navigation/app_navigator.dart';
+import 'package:customer_app/core/error_handler/app_global_error_listener.dart';
+import 'package:customer_app/core/navigation/root_nav_key.dart';
 import 'package:customer_app/features/onboarding/onboading_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/shared_core.dart'; // عشان AppEnv + InspectorOverlayButton
 import 'package:shared_ui/shared_ui.dart';
-import '../core/customer_errror/app_global_error_listener.dart';
 
 class CustomerApp extends ConsumerWidget {
   const CustomerApp({super.key});

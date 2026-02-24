@@ -1,5 +1,3 @@
-// customer_app/lib/app/result_guard.dart
-import 'package:customer_app/core/customer_network/app_response.dart';
 import 'package:shared_core/shared_core.dart';
 
 Future<AppResponse<T>> responseHelper<T>(Future<T> Function() action) async {

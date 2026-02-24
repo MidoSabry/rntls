@@ -1,4 +1,3 @@
-
 sealed class Failure {
   final String message;
   final int? statusCode;

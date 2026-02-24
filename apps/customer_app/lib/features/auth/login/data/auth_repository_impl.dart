@@ -1,11 +1,10 @@
 // apps/customer_app/lib/features/auth/data/auth_repository_impl.dart
 
-import 'package:customer_app/core/customer_network/app_response.dart';
+import 'package:shared_core/src/network/response/app_response.dart';
 import 'package:customer_app/features/auth/login/data/session_repository_impl.dart';
 import 'package:shared_core/shared_core.dart';
 
 import '../../../../app/constants/api_endpoints_constants.dart';
-import '../../../../core/customer_network/response_helper.dart';
 import '../domain/auth_repository.dart';
 import 'login_request_model.dart';
 

@@ -20,8 +20,10 @@ class ErrorMapper {
     return const UnknownFailure('Something went wrong. Please try again.');
   }
 
+  // ---------------------------
+  // Dio -> ApiException
+  // ---------------------------
   static ApiException _dioToApiException(DioException e) {
-    // Timeout / connection issues
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
@@ -53,7 +55,6 @@ class ErrorMapper {
         );
 
       case DioExceptionType.unknown:
-        // Could be socket error, format error, etc.
         return ApiException(
           type: ApiExceptionType.unknown,
           message: e.message ?? 'Unexpected error.',
@@ -66,7 +67,67 @@ class ErrorMapper {
     final status = e.response?.statusCode;
     final data = e.response?.data;
 
-    // Try to extract server message if exists
+    // 1) لو السيرفر بيرجع envelope: {success,message,error,data}
+    if (data is Map) {
+      final success = data['success'] == true;
+      if (!success) {
+        final msg = _extractMessage(data) ?? 'Request failed';
+
+        // validation: 400/422 أو error map
+        final err = data['error'];
+        if (status == 400 || status == 422 || err is Map) {
+          return ApiException(
+            type: ApiExceptionType.validation,
+            statusCode: status,
+            message: msg,
+            data: data, // نخزن envelope كله عشان نطلع fields
+          );
+        }
+
+        // auth/notfound/server...
+        if (status == 401) {
+          return ApiException(
+            type: ApiExceptionType.unauthorized,
+            statusCode: status,
+            message: msg,
+            data: data,
+          );
+        }
+        if (status == 403) {
+          return ApiException(
+            type: ApiExceptionType.forbidden,
+            statusCode: status,
+            message: msg,
+            data: data,
+          );
+        }
+        if (status == 404) {
+          return ApiException(
+            type: ApiExceptionType.notFound,
+            statusCode: status,
+            message: msg,
+            data: data,
+          );
+        }
+        if (status != null && status >= 500) {
+          return ApiException(
+            type: ApiExceptionType.server,
+            statusCode: status,
+            message: msg,
+            data: data,
+          );
+        }
+
+        return ApiException(
+          type: ApiExceptionType.unknown,
+          statusCode: status,
+          message: msg,
+          data: data,
+        );
+      }
+    }
+
+    // 2) fallback لو مش envelope
     final serverMsg = _extractMessage(data) ?? 'Request failed';
 
     if (status == 401) {
@@ -118,6 +179,9 @@ class ErrorMapper {
     );
   }
 
+  // ---------------------------
+  // ApiException -> Failure
+  // ---------------------------
   static Failure _apiExceptionToFailure(ApiException ex) {
     switch (ex.type) {
       case ApiExceptionType.network:
@@ -136,7 +200,6 @@ class ErrorMapper {
         return NotFoundFailure(ex.message, statusCode: ex.statusCode);
 
       case ApiExceptionType.validation:
-        // If your backend sends field errors, keep it here
         final fields = _extractFieldErrors(ex.data);
         return ValidationFailure(
           ex.message,
@@ -152,39 +215,47 @@ class ErrorMapper {
     }
   }
 
-  /// Try common keys: message / msg / error / detail
+  // ---------------------------
+  // helpers
+  // ---------------------------
+
+  /// Try common keys in body/envelope
   static String? _extractMessage(dynamic data) {
     if (data is Map) {
       for (final key in ['message', 'error', 'msg', 'detail']) {
         final v = data[key];
-        if (v is String && v.trim().isNotEmpty) return v;
+        if (v is String && v.trim().isNotEmpty) return v.trim();
+      }
+      // بعض الـ APIs تحط الرسالة داخل data.message
+      final inner = data['data'];
+      if (inner is Map) {
+        for (final key in ['message', 'error', 'msg', 'detail']) {
+          final v = inner[key];
+          if (v is String && v.trim().isNotEmpty) return v.trim();
+        }
       }
     }
     return null;
   }
 
-
-
-////////todo:still work on it//////////////////////////////
+  /// For validation, prefer: envelope.error (map) or body.errors
   static Map<String, dynamic>? _extractFieldErrors(dynamic data) {
-  if (data is Map) {
-    final err = data['error'];
-    if (err is Map<String, dynamic>) return err;
+    if (data is Map) {
+      final err = data['error'];
+      if (err is Map) return err.cast<String, dynamic>();
 
-    final errors = data['errors'];
-    if (errors is Map<String, dynamic>) return errors;
+      final errors = data['errors'];
+      if (errors is Map) return errors.cast<String, dynamic>();
 
-    final inner = data['data'];
-    if (inner is Map) {
-      final innerErr = inner['error'];
-      if (innerErr is Map<String, dynamic>) return innerErr;
+      final inner = data['data'];
+      if (inner is Map) {
+        final innerErr = inner['error'];
+        if (innerErr is Map) return innerErr.cast<String, dynamic>();
 
-      final innerErrors = inner['errors'];
-      if (innerErrors is Map<String, dynamic>) return innerErrors;
+        final innerErrors = inner['errors'];
+        if (innerErrors is Map) return innerErrors.cast<String, dynamic>();
+      }
     }
+    return null;
   }
-  return null;
-}
-
-
 }
