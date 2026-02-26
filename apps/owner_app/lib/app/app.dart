@@ -1,0 +1,44 @@
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_core/shared_core.dart'; // عشان AppEnv + InspectorOverlayButton
+import 'package:shared_ui/shared_ui.dart';
+
+class CustomerApp extends ConsumerWidget {
+  const CustomerApp({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container();
+    // final env = ref.watch(customerAppEnvProvider);
+
+    // return MaterialApp(
+    //   navigatorKey: rootNavigatorKey,
+    //   debugShowCheckedModeBanner: false,
+    //   title: 'RNTLS Customer',
+
+    //   builder: (context, child) {
+    //     final wrapped = AppGlobalErrorListener(
+    //       child: child ?? const SizedBox.shrink(),
+    //     );
+
+    //     if (!env.enableInspector) return wrapped;
+
+    //     return Stack(
+    //       children: [
+    //         wrapped,
+    //           OFloatingActionButton(
+    //   child: InspectorOverlayButton(navigatorKey: rootNavigatorKey),
+    // ),
+    //       ],
+    //     );
+    //   },
+
+    //   home: SplashScreen(
+    //     next: (_) => CustomerOnboardingScreen(
+    //       onDone: () => () {},
+    //     ),
+    //   ),
+    // );
+  }
+}

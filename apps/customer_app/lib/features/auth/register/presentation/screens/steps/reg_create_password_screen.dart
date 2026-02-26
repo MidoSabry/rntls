@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_core/shared_core.dart';
 import 'package:shared_ui/shared_ui.dart';
 
 import '../../controller/registration_controller.dart';
+import '../../controller/registration_vm.dart';
 
 class RegCreatePasswordScreen extends ConsumerWidget {
   const RegCreatePasswordScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.watch(registrationControllerProvider);
+    // ✅ wrapper + vm
+    final vs = ref.watch(registrationControllerProvider);
+    final s = vs.dataOrNull ?? const RegistrationVM();
+    final isLoading = vs is ViewLoading<RegistrationVM>;
+
     final c = ref.read(registrationControllerProvider.notifier);
 
     return SingleChildScrollView(
@@ -17,8 +23,10 @@ class RegCreatePasswordScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Set a secure password',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          const Text(
+            'Set a secure password',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 8),
           const Text(
             'Create a strong password to protect your account',
@@ -45,19 +53,21 @@ class RegCreatePasswordScreen extends ConsumerWidget {
 
           const SizedBox(height: 18),
 
-          const Text('Password must contain:',
-              style: TextStyle(fontWeight: FontWeight.w600)),
+          const Text(
+            'Password must contain:',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 10),
-          _Bullet(text: 'Must be at least 8 characters long.'),
-          _Bullet(text: 'Use a mix of uppercase and lowercase letters.'),
-          _Bullet(text: 'Include numbers and special characters.'),
+          const _Bullet(text: 'Must be at least 8 characters long.'),
+          const _Bullet(text: 'Use a mix of uppercase and lowercase letters.'),
+          const _Bullet(text: 'Include numbers and special characters.'),
 
           const SizedBox(height: 22),
 
           SharedButton(
             label: 'Create Password',
-            onPressed: s.isLoading ? null : () => c.next(),
-            isLoading: s.isLoading,
+            onPressed: isLoading ? null : () => c.next(),
+            isLoading: isLoading,
             variant: SharedButtonVariant.filled,
             rounded: false,
             radius: 14,
@@ -88,7 +98,12 @@ class _Bullet extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Expanded(child: Text(text, style: const TextStyle(color: Colors.black54))),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(color: Colors.black54),
+            ),
+          ),
         ],
       ),
     );

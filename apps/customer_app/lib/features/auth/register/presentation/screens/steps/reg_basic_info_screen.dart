@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_core/shared_core.dart';
 import 'package:shared_ui/shared_ui.dart';
 
 import '../../controller/registration_controller.dart';
-import '../../controller/registration_state.dart';
+import '../../controller/registration_vm.dart';
 
 class RegBasicInfoScreen extends ConsumerStatefulWidget {
   const RegBasicInfoScreen({super.key});
@@ -31,10 +32,11 @@ class _RegBasicInfoScreenState extends ConsumerState<RegBasicInfoScreen> {
   Future<void> _pickDob(WidgetRef ref) async {
     FocusManager.instance.primaryFocus?.unfocus();
 
-    final s = ref.read(registrationControllerProvider);
+    // ✅ read wrapper then extract vm
+    final vs = ref.read(registrationControllerProvider);
+    final s = vs.dataOrNull ?? const RegistrationVM();
 
     DateTime? initial;
-    // لو عندك dob مخزن كنص MM/DD/YYYY نحاول نفهمه
     try {
       if (s.draft.dateOfBirth.trim().isNotEmpty) {
         initial = DateFormat('MM/dd/yyyy').parseStrict(s.draft.dateOfBirth);
@@ -55,16 +57,17 @@ class _RegBasicInfoScreenState extends ConsumerState<RegBasicInfoScreen> {
 
     final formatted = DateFormat('MM/dd/yyyy').format(picked);
 
-    // update controller text
     _dobCtrl.text = formatted;
-
-    // update state
     ref.read(registrationControllerProvider.notifier).setDob(formatted);
   }
 
   @override
   Widget build(BuildContext context) {
-    final RegistrationState s = ref.watch(registrationControllerProvider);
+    // ✅ watch wrapper + extract vm + loading
+    final vs = ref.watch(registrationControllerProvider);
+    final s = vs.dataOrNull ?? const RegistrationVM();
+    final isLoading = vs is ViewLoading<RegistrationVM>;
+
     final c = ref.read(registrationControllerProvider.notifier);
 
     // keep controller synced (بدون setState)
@@ -129,14 +132,11 @@ class _RegBasicInfoScreenState extends ConsumerState<RegBasicInfoScreen> {
 
           const SizedBox(height: 14),
 
-          // ✅ DatePicker Field
           SharedTextField(
             label: 'Date of birth',
             hint: 'MM/DD/YYYY',
             prefix: const Icon(Icons.calendar_month_outlined),
             errorText: s.dobError,
-
-            // أهم 3 سطور:
             controller: _dobCtrl,
             readOnly: true,
             onTap: () => _pickDob(ref),
@@ -156,8 +156,8 @@ class _RegBasicInfoScreenState extends ConsumerState<RegBasicInfoScreen> {
 
           SharedButton(
             label: 'Continue',
-            onPressed: s.isLoading ? null : () => c.next(),
-            isLoading: s.isLoading,
+            onPressed: isLoading ? null : () => c.next(),
+            isLoading: isLoading,
             variant: SharedButtonVariant.filled,
             rounded: false,
             radius: 14,

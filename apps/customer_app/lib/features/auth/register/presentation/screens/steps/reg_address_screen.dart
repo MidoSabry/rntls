@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_core/shared_core.dart';
 import 'package:shared_ui/shared_ui.dart';
 
 import '../../controller/registration_controller.dart';
+import '../../controller/registration_vm.dart';
 
 class RegAddressScreen extends ConsumerStatefulWidget {
   const RegAddressScreen({super.key});
@@ -28,8 +30,14 @@ class _RegAddressScreenState extends ConsumerState<RegAddressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final s = ref.watch(registrationControllerProvider);
+    // ✅ 1) watch wrapper + extract vm
+    final vs = ref.watch(registrationControllerProvider);
+    final s = vs.dataOrNull ?? const RegistrationVM();
+
     final c = ref.read(registrationControllerProvider.notifier);
+
+    // ✅ 2) loading from wrapper
+    final isLoading = vs is ViewLoading<RegistrationVM>;
 
     // keep controller synced with state (important when GPS fills address)
     final stateAddress = s.draft.address;
@@ -58,12 +66,10 @@ class _RegAddressScreenState extends ConsumerState<RegAddressScreen> {
           ),
           const SizedBox(height: 14),
 
-          // ✅ Use current location
           SharedButton(
             label: 'Use my current location',
-            onPressed: s.isLoading ? null : () => c.fillAddressFromCurrentLocation(),
-            isLoading: s.isLoading,
-            // لو معندكش outline خليها filled أو text
+            onPressed: isLoading ? null : () => c.fillAddressFromCurrentLocation(),
+            isLoading: isLoading,
             variant: SharedButtonVariant.filled,
             rounded: false,
             radius: 14,
@@ -106,7 +112,6 @@ class _RegAddressScreenState extends ConsumerState<RegAddressScreen> {
                   ),
                 ),
 
-                // ✅ Address field overlay
                 Positioned(
                   left: 14,
                   right: 14,
@@ -121,8 +126,7 @@ class _RegAddressScreenState extends ConsumerState<RegAddressScreen> {
                   ),
                 ),
 
-                // ✅ Loading overlay on map area (nice UX)
-                if (s.isLoading)
+                if (isLoading)
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
@@ -142,8 +146,8 @@ class _RegAddressScreenState extends ConsumerState<RegAddressScreen> {
 
           SharedButton(
             label: 'Confirm Address',
-            onPressed: s.isLoading ? null : () => c.next(),
-            isLoading: s.isLoading,
+            onPressed: isLoading ? null : () => c.next(),
+            isLoading: isLoading,
             variant: SharedButtonVariant.filled,
             rounded: false,
             radius: 14,

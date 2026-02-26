@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_core/shared_core.dart';
 import 'package:shared_ui/shared_ui.dart';
 
 import '../../controller/registration_controller.dart';
-import '../../controller/registration_state.dart';
+import '../../controller/registration_vm.dart';
 
 class RegEmailSendScreen extends ConsumerWidget {
   const RegEmailSendScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final RegistrationState s = ref.watch(registrationControllerProvider);
+    // ✅ wrapper + vm + loading
+    final vs = ref.watch(registrationControllerProvider);
+    final s = vs.dataOrNull ?? const RegistrationVM();
+    final isLoading = vs is ViewLoading<RegistrationVM>;
+
     final c = ref.read(registrationControllerProvider.notifier);
 
     return SingleChildScrollView(
@@ -18,8 +23,10 @@ class RegEmailSendScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Verify your email',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          const Text(
+            'Verify your email',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 8),
           const Text(
             "We'll send a verification code to confirm your email address.",
@@ -40,8 +47,8 @@ class RegEmailSendScreen extends ConsumerWidget {
 
           SharedButton(
             label: 'Send Verification Code',
-            onPressed: s.isLoading ? null : () => c.next(),
-            isLoading: s.isLoading,
+            onPressed: isLoading ? null : () => c.next(),
+            isLoading: isLoading,
             variant: SharedButtonVariant.filled,
             rounded: false,
             radius: 14,

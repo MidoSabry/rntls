@@ -26,6 +26,7 @@ export 'src/errors/error_mapper.dart';
 export 'src/network/response/app_response.dart';
 export 'src/network/response/app_error_presenter.dart';
 export 'src/network/response/response_helper.dart';
+export 'src/network/response/base_state.dart';
 
 // Inspector Core
 export 'src/inspector/inspector_model.dart';

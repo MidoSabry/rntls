@@ -5,76 +5,85 @@ import '../../../../../app/providers.dart';
 import '../../../../../core/error_handler/error_extensions.dart';
 import '../../domain/registration_repository.dart';
 import '../../domain/registration_step.dart';
-import 'registration_state.dart';
+import 'registration_vm.dart';
 
 final registrationControllerProvider =
-    NotifierProvider<RegistrationController, RegistrationState>(
-      RegistrationController.new,
-    );
+    NotifierProvider<RegistrationController, ViewState<RegistrationVM>>(
+  RegistrationController.new,
+);
 
-class RegistrationController extends Notifier<RegistrationState> {
+class RegistrationController extends Notifier<ViewState<RegistrationVM>> {
   static const _userType = 'customer';
 
   @override
-  RegistrationState build() => const RegistrationState();
+  ViewState<RegistrationVM> build() => const ViewData(RegistrationVM());
 
-  // -------------------------
-  // Setters for draft fields
-  // -------------------------
-  void setFirstName(String v) => state = state.copyWith(
-    draft: state.draft.copyWith(firstName: v),
-    firstNameError: null,
-  );
+  // -------- helpers to get/set vm safely
+  RegistrationVM get _vm => state.dataOrNull ?? const RegistrationVM();
 
-  void setLastName(String v) => state = state.copyWith(
-    draft: state.draft.copyWith(lastName: v),
-    lastNameError: null,
-  );
+  void _setVm(RegistrationVM vm) => state = ViewData(vm);
 
-  void setEmail(String v) => state = state.copyWith(
-    draft: state.draft.copyWith(email: v),
-    emailError: null,
-  );
+  bool get _isLoading => state is ViewLoading<RegistrationVM>;
 
-  void setPhone(String v) => state = state.copyWith(
-    draft: state.draft.copyWith(phone: v),
-    phoneError: null,
-  );
-
-  void setDob(String v) => state = state.copyWith(
-    draft: state.draft.copyWith(dateOfBirth: v),
-    dobError: null,
-  );
-
-  void setAbout(String v) => state = state.copyWith(
-    draft: state.draft.copyWith(aboutMe: v),
-    aboutError: null,
-  );
-
-  // ✅ لما أغير password امسح confirm error لو كان mismatch
-  void setPassword(String v) => state = state.copyWith(
-    draft: state.draft.copyWith(password: v),
-    passwordError: null,
-    confirmPasswordError: null,
-  );
-
-  void setConfirmPassword(String v) {
-    state = state.copyWith(confirmPassword: v, confirmPasswordError: null);
+  void _setLoading([bool keepData = true]) {
+    state = ViewLoading(data: keepData ? _vm : null);
   }
+
+  void _emitGlobal(Failure f, {String? override}) {
+    ref.emitFailure(f, messageOverride: override);
+  }
+
+  // -------------------------
+  // Setters (تعدّل الـ VM)
+  // -------------------------
+  void setFirstName(String v) => _setVm(_vm.copyWith(
+        draft: _vm.draft.copyWith(firstName: v),
+        firstNameError: null,
+      ));
+
+  void setLastName(String v) => _setVm(_vm.copyWith(
+        draft: _vm.draft.copyWith(lastName: v),
+        lastNameError: null,
+      ));
+
+  void setEmail(String v) => _setVm(_vm.copyWith(
+        draft: _vm.draft.copyWith(email: v),
+        emailError: null,
+      ));
+
+  void setPhone(String v) => _setVm(_vm.copyWith(
+        draft: _vm.draft.copyWith(phone: v),
+        phoneError: null,
+      ));
+
+  void setDob(String v) => _setVm(_vm.copyWith(
+        draft: _vm.draft.copyWith(dateOfBirth: v),
+        dobError: null,
+      ));
+
+  void setAbout(String v) => _setVm(_vm.copyWith(
+        draft: _vm.draft.copyWith(aboutMe: v),
+        aboutError: null,
+      ));
+
+  void setPassword(String v) => _setVm(_vm.copyWith(
+        draft: _vm.draft.copyWith(password: v),
+        passwordError: null,
+        confirmPasswordError: null,
+      ));
+
+  void setConfirmPassword(String v) =>
+      _setVm(_vm.copyWith(confirmPassword: v, confirmPasswordError: null));
 
   void setAddress({required String address, double? lat, double? lng}) {
-    state = state.copyWith(
-      draft: state.draft.copyWith(address: address, lat: lat, lng: lng),
+    _setVm(_vm.copyWith(
+      draft: _vm.draft.copyWith(address: address, lat: lat, lng: lng),
       addressError: null,
-    );
+    ));
   }
 
-  // OTP code inputs
-  void setPhoneCode(String v) =>
-      state = state.copyWith(phoneCode: v, otpError: null);
-
-  void setEmailCode(String v) =>
-      state = state.copyWith(emailCode: v, otpError: null);
+  void setPhoneCode(String v) => _setVm(_vm.copyWith(phoneCode: v, otpError: null));
+  void setEmailCode(String v) => _setVm(_vm.copyWith(emailCode: v, otpError: null));
 
   // -------------------------
   // Validation helpers
@@ -95,25 +104,21 @@ class RegistrationController extends Notifier<RegistrationState> {
     return null;
   }
 
-  String? _fieldMsg(Map<String, dynamic> fields, String key) {
-    final v = fields[key];
+  /// Handles: String OR List<String>
+  String? _firstMsg(dynamic v) {
     if (v == null) return null;
     if (v is List && v.isNotEmpty) return v.first.toString();
     return v.toString();
   }
 
-  String? _addErrorMsg(dynamic v) {
-    if (v == null) return null;
-    if (v is List && v.isNotEmpty) return v.first.toString();
-    return v.toString();
-  }
+  String? _fieldMsg(Map<String, dynamic> fields, String key) =>
+      _firstMsg(fields[key]);
 
   // -------------------------
   // Flow actions
   // -------------------------
   void back() {
-    final s = state.step;
-    final prev = switch (s) {
+    final prev = switch (_vm.step) {
       RegistrationStep.basicInfo => RegistrationStep.basicInfo,
       RegistrationStep.phoneOtp => RegistrationStep.basicInfo,
       RegistrationStep.emailSend => RegistrationStep.phoneOtp,
@@ -126,13 +131,13 @@ class RegistrationController extends Notifier<RegistrationState> {
       RegistrationStep.done => RegistrationStep.done,
     };
 
-    state = state.copyWith(step: prev, clearErrors: true, otpError: null);
+    _setVm(_vm.copyWith(step: prev, clearErrors: true, otpError: null));
   }
 
   Future<void> next() async {
-    if (state.isLoading) return;
+    if (_isLoading) return;
 
-    switch (state.step) {
+    switch (_vm.step) {
       case RegistrationStep.basicInfo:
         await _submitBasicInfo();
         return;
@@ -150,11 +155,11 @@ class RegistrationController extends Notifier<RegistrationState> {
         return;
 
       case RegistrationStep.emailVerified:
-        state = state.copyWith(
+        _setVm(_vm.copyWith(
           step: RegistrationStep.createPassword,
           clearErrors: true,
           otpError: null,
-        );
+        ));
         return;
 
       case RegistrationStep.createPassword:
@@ -166,11 +171,7 @@ class RegistrationController extends Notifier<RegistrationState> {
         return;
 
       case RegistrationStep.identity:
-        // placeholder: identity done
-        state = state.copyWith(
-          step: RegistrationStep.submit,
-          clearErrors: true,
-        );
+        _setVm(_vm.copyWith(step: RegistrationStep.submit, clearErrors: true));
         await _submitRegister();
         return;
 
@@ -185,7 +186,7 @@ class RegistrationController extends Notifier<RegistrationState> {
 
   // -------- Basic info -> send sms otp
   Future<void> _submitBasicInfo() async {
-    final d = state.draft;
+    final d = _vm.draft;
 
     final fnErr = _req(d.firstName, 'First name is required');
     final lnErr = _req(d.lastName, 'Last name is required');
@@ -193,27 +194,18 @@ class RegistrationController extends Notifier<RegistrationState> {
     final phErr = _req(d.phone, 'Phone is required');
     final dobErr = _req(d.dateOfBirth, 'Date of birth is required');
 
-    if (fnErr != null ||
-        lnErr != null ||
-        emErr != null ||
-        phErr != null ||
-        dobErr != null) {
-      state = state.copyWith(
+    if (fnErr != null || lnErr != null || emErr != null || phErr != null || dobErr != null) {
+      _setVm(_vm.copyWith(
         firstNameError: fnErr,
         lastNameError: lnErr,
         emailError: emErr,
         phoneError: phErr,
         dobError: dobErr,
-      );
+      ));
       return;
     }
 
-    state = state.copyWith(
-      isLoading: true,
-      clearErrors: true,
-      otpError: null,
-      phoneCode: '',
-    );
+    _setLoading(true);
 
     final repo = ref.read(registrationRepositoryProvider);
     final res = await repo.sendSmsOtp(
@@ -222,41 +214,45 @@ class RegistrationController extends Notifier<RegistrationState> {
       rentalUuid: d.rentalUuid,
     );
 
-    state = state.copyWith(isLoading: false);
-
     if (res is AppSuccess<OtpSendResult>) {
-      state = state.copyWith(
+      _setVm(_vm.copyWith(
         draft: d.copyWith(phoneOtpUuid: res.data.uuid),
         step: RegistrationStep.phoneOtp,
-      );
+        clearErrors: true,
+        otpError: null,
+        phoneCode: '',
+      ));
       return;
     }
 
     final failure = (res as AppFailure<OtpSendResult>).failure;
+
+    String? override;
     if (failure is ValidationFailure && failure.fields != null) {
-      final phoneMsg = _addErrorMsg(failure.fields!['phone']);
-      ref.emitFailure(failure, messageOverride: phoneMsg);
+      override = _firstMsg(failure.fields!['phone']);
     }
-    ref.emitFailure(failure);
+
+    _emitGlobal(failure, override: override);
+
+    // رجّع للحالة الطبيعية مع بقاء البيانات
+    _setVm(_vm);
   }
 
   // -------- verify phone -> go email send screen
   Future<void> _submitPhoneOtp() async {
-    final d = state.draft;
-    final code = state.phoneCode.trim();
+    final d = _vm.draft;
+    final code = _vm.phoneCode.trim();
 
     if (code.isEmpty) {
-      state = state.copyWith(otpError: 'Enter the code');
+      _setVm(_vm.copyWith(otpError: 'Enter the code'));
       return;
     }
     if (d.phoneOtpUuid == null || d.phoneOtpUuid!.isEmpty) {
-      state = state.copyWith(
-        otpError: 'Missing verification uuid. Resend code.',
-      );
+      _setVm(_vm.copyWith(otpError: 'Missing verification uuid. Resend code.'));
       return;
     }
 
-    state = state.copyWith(isLoading: true, otpError: null);
+    _setLoading(true);
 
     final repo = ref.read(registrationRepositoryProvider);
     final res = await repo.verifyMobile(
@@ -267,38 +263,33 @@ class RegistrationController extends Notifier<RegistrationState> {
       rentalUuid: d.rentalUuid,
     );
 
-    state = state.copyWith(isLoading: false);
-
     if (res is AppSuccess<void>) {
-      state = state.copyWith(
+      _setVm(_vm.copyWith(
         step: RegistrationStep.emailSend,
         clearErrors: true,
         otpError: null,
         emailCode: '',
-      );
+      ));
       return;
     }
 
     final failure = (res as AppFailure<void>).failure;
-    state = state.copyWith(otpError: failure.message);
+
+    // OTP غالبًا inline
+    _setVm(_vm.copyWith(otpError: failure.message));
   }
 
   // -------- send email otp -> go emailOtp screen
   Future<void> _sendEmailOtp() async {
-    final d = state.draft;
+    final d = _vm.draft;
 
     final emErr = _validateEmail(d.email);
     if (emErr != null) {
-      state = state.copyWith(emailError: emErr);
+      _setVm(_vm.copyWith(emailError: emErr));
       return;
     }
 
-    state = state.copyWith(
-      isLoading: true,
-      otpError: null,
-      clearErrors: true,
-      emailCode: '',
-    );
+    _setLoading(true);
 
     final repo = ref.read(registrationRepositoryProvider);
     final emailRes = await repo.sendEmailOtp(
@@ -307,37 +298,37 @@ class RegistrationController extends Notifier<RegistrationState> {
       rentalUuid: d.rentalUuid,
     );
 
-    state = state.copyWith(isLoading: false);
-
     if (emailRes is AppSuccess<OtpSendResult>) {
-      state = state.copyWith(
+      _setVm(_vm.copyWith(
         draft: d.copyWith(emailOtpUuid: emailRes.data.uuid),
         step: RegistrationStep.emailOtp,
-      );
+        clearErrors: true,
+        otpError: null,
+        emailCode: '',
+      ));
       return;
     }
 
     final failure = (emailRes as AppFailure<OtpSendResult>).failure;
-    ref.emitFailure(failure);
+    _emitGlobal(failure);
+    _setVm(_vm);
   }
 
   // -------- verify email -> go emailVerified screen
   Future<void> _submitEmailOtp() async {
-    final d = state.draft;
-    final code = state.emailCode.trim();
+    final d = _vm.draft;
+    final code = _vm.emailCode.trim();
 
     if (code.isEmpty) {
-      state = state.copyWith(otpError: 'Enter the code');
+      _setVm(_vm.copyWith(otpError: 'Enter the code'));
       return;
     }
     if (d.emailOtpUuid == null || d.emailOtpUuid!.isEmpty) {
-      state = state.copyWith(
-        otpError: 'Missing verification uuid. Resend code.',
-      );
+      _setVm(_vm.copyWith(otpError: 'Missing verification uuid. Resend code.'));
       return;
     }
 
-    state = state.copyWith(isLoading: true, otpError: null);
+    _setLoading(true);
 
     final repo = ref.read(registrationRepositoryProvider);
     final res = await repo.verifyEmail(
@@ -348,25 +339,23 @@ class RegistrationController extends Notifier<RegistrationState> {
       rentalUuid: d.rentalUuid,
     );
 
-    state = state.copyWith(isLoading: false);
-
     if (res is AppSuccess<void>) {
-      state = state.copyWith(
+      _setVm(_vm.copyWith(
         step: RegistrationStep.emailVerified,
         clearErrors: true,
         otpError: null,
-      );
+      ));
       return;
     }
 
     final failure = (res as AppFailure<void>).failure;
-    state = state.copyWith(otpError: failure.message);
+    _setVm(_vm.copyWith(otpError: failure.message));
   }
 
   // -------- password step -> address
   Future<void> _submitPasswordStep() async {
-    final pass = state.draft.password;
-    final confirm = state.confirmPassword;
+    final pass = _vm.draft.password;
+    final confirm = _vm.confirmPassword;
 
     final pErr = _validatePassword(pass);
 
@@ -378,62 +367,55 @@ class RegistrationController extends Notifier<RegistrationState> {
     }
 
     if (pErr != null || cErr != null) {
-      state = state.copyWith(passwordError: pErr, confirmPasswordError: cErr);
+      _setVm(_vm.copyWith(passwordError: pErr, confirmPasswordError: cErr));
       return;
     }
 
-    state = state.copyWith(step: RegistrationStep.address, clearErrors: true);
+    _setVm(_vm.copyWith(step: RegistrationStep.address, clearErrors: true));
   }
 
   // -------- address -> identity
   Future<void> _submitAddressStep() async {
-    final d = state.draft;
+    final d = _vm.draft;
 
     final aErr = _req(d.address, 'Address is required');
     if (aErr != null) {
-      state = state.copyWith(addressError: aErr);
+      _setVm(_vm.copyWith(addressError: aErr));
       return;
     }
 
-    state = state.copyWith(step: RegistrationStep.identity, clearErrors: true);
+    _setVm(_vm.copyWith(step: RegistrationStep.identity, clearErrors: true));
   }
 
   // -------- register
   Future<void> _submitRegister() async {
-    final d = state.draft;
+    final d = _vm.draft;
 
     if (d.phoneOtpUuid == null || d.phoneOtpUuid!.isEmpty) {
-      state = state.copyWith(
-        step: RegistrationStep.phoneOtp,
-        otpError: 'Verify phone first',
-      );
+      _setVm(_vm.copyWith(step: RegistrationStep.phoneOtp, otpError: 'Verify phone first'));
       return;
     }
     if (d.emailOtpUuid == null || d.emailOtpUuid!.isEmpty) {
-      state = state.copyWith(
-        step: RegistrationStep.emailSend,
-        otpError: 'Verify email first',
-      );
+      _setVm(_vm.copyWith(step: RegistrationStep.emailSend, otpError: 'Verify email first'));
       return;
     }
 
-    state = state.copyWith(isLoading: true, clearErrors: true, otpError: null);
+    _setLoading(true);
 
     final repo = ref.read(registrationRepositoryProvider);
     final res = await repo.registerCustomer(draft: d, userType: _userType);
 
-    state = state.copyWith(isLoading: false);
-
     if (res is AppSuccess<void>) {
-      state = state.copyWith(step: RegistrationStep.done, clearErrors: true);
+      _setVm(_vm.copyWith(step: RegistrationStep.done, clearErrors: true));
       return;
     }
 
     final failure = (res as AppFailure<void>).failure;
 
+    // inline validation على كل الحقول
     if (failure is ValidationFailure && failure.fields != null) {
       final fields = failure.fields!;
-      state = state.copyWith(
+      _setVm(_vm.copyWith(
         firstNameError: _fieldMsg(fields, 'first_name'),
         lastNameError: _fieldMsg(fields, 'last_name'),
         emailError: _fieldMsg(fields, 'email'),
@@ -441,24 +423,24 @@ class RegistrationController extends Notifier<RegistrationState> {
         passwordError: _fieldMsg(fields, 'password'),
         dobError: _fieldMsg(fields, 'date_of_birth'),
         aboutError: _fieldMsg(fields, 'about_me'),
-        addressError:
-            _fieldMsg(fields, 'location') ?? _fieldMsg(fields, 'address'),
-      );
-      state = state.copyWith(step: RegistrationStep.basicInfo);
+        addressError: _fieldMsg(fields, 'location') ?? _fieldMsg(fields, 'address'),
+        step: RegistrationStep.basicInfo,
+      ));
       return;
     }
 
-    ref.emitFailure(failure);
+    _emitGlobal(failure);
+    _setVm(_vm);
   }
 
   // -------------------------
-  // Optional: Resend actions (لو UI محتاجها)
+  // Optional: resend actions
   // -------------------------
   Future<void> resendPhoneOtp() async {
-    if (state.isLoading) return;
-    final d = state.draft;
+    if (_isLoading) return;
 
-    state = state.copyWith(isLoading: true, otpError: null);
+    final d = _vm.draft;
+    _setLoading(true);
 
     final repo = ref.read(registrationRepositoryProvider);
     final res = await repo.sendSmsOtp(
@@ -467,45 +449,41 @@ class RegistrationController extends Notifier<RegistrationState> {
       rentalUuid: d.rentalUuid,
     );
 
-    state = state.copyWith(isLoading: false);
-
     if (res is AppSuccess<OtpSendResult>) {
-      state = state.copyWith(
+      _setVm(_vm.copyWith(
         draft: d.copyWith(phoneOtpUuid: res.data.uuid),
         phoneCode: '',
-      );
+        otpError: null,
+      ));
       return;
     }
 
     final failure = (res as AppFailure<OtpSendResult>).failure;
-    ref.emitFailure(failure);
+    _emitGlobal(failure);
+    _setVm(_vm);
+  }
+
+  Future<void> resendEmailOtp() async {
+    if (_isLoading) return;
+    await _sendEmailOtp();
   }
 
   // -------------------------
   // Location
   // -------------------------
-
   Future<void> fillAddressFromCurrentLocation() async {
-    if (state.isLoading) return;
+    if (_isLoading) return;
 
-    state = state.copyWith(isLoading: true, addressError: null);
+    _setLoading(true);
 
     try {
       final loc = await ref.read(locationServiceProvider).getCurrentLocation();
-
       setAddress(address: loc.address, lat: loc.lat, lng: loc.lng);
-
-      state = state.copyWith(isLoading: false);
+      _setVm(_vm.copyWith(addressError: null));
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
+      _setVm(_vm.copyWith(
         addressError: e.toString().replaceFirst('Exception: ', ''),
-      );
+      ));
     }
-  }
-
-  Future<void> resendEmailOtp() async {
-    if (state.isLoading) return;
-    await _sendEmailOtp();
   }
 }

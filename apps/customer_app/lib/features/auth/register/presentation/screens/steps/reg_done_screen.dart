@@ -2,15 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_ui/shared_ui.dart';
 
-import '../../controller/registration_controller.dart';
-
 class RegDoneScreen extends ConsumerWidget {
   const RegDoneScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.read(registrationControllerProvider.notifier);
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 26, 18, 18),
       child: Column(
@@ -42,7 +38,6 @@ class RegDoneScreen extends ConsumerWidget {
           SharedButton(
             label: 'Move to home',
             onPressed: () {
-              // TODO: navigate to home
               Navigator.of(context).pop();
             },
             variant: SharedButtonVariant.filled,

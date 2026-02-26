@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_core/shared_core.dart';
 import 'package:shared_ui/shared_ui.dart';
 
 import '../../controller/registration_controller.dart';
-import '../../controller/registration_state.dart';
+import '../../controller/registration_vm.dart';
 import 'widgets/otp_input.dart';
 
 class RegPhoneOtpScreen extends ConsumerStatefulWidget {
@@ -45,21 +46,29 @@ class _RegPhoneOtpScreenState extends ConsumerState<RegPhoneOtpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final RegistrationState s = ref.watch(registrationControllerProvider);
+    // ✅ wrapper + vm + loading
+    final vs = ref.watch(registrationControllerProvider);
+    final s = vs.dataOrNull ?? const RegistrationVM();
+    final isLoading = vs is ViewLoading<RegistrationVM>;
+
     final c = ref.read(registrationControllerProvider.notifier);
 
     final phone = s.draft.phone;
     final masked = phone.isEmpty
         ? ''
-        : (phone.length <= 4 ? phone : '${phone.substring(0, 2)}******${phone.substring(phone.length - 2)}');
+        : (phone.length <= 4
+            ? phone
+            : '${phone.substring(0, 2)}******${phone.substring(phone.length - 2)}');
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Enter Verification Code',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          const Text(
+            'Enter Verification Code',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 8),
           Text(
             "We've sent a 4-digit code to $masked",
@@ -84,16 +93,16 @@ class _RegPhoneOtpScreenState extends ConsumerState<RegPhoneOtpScreen> {
             children: [
               const Text("Didn't receive the code?  "),
               TextButton(
-                onPressed: _seconds > 0 || s.isLoading
+                onPressed: _seconds > 0 || isLoading
                     ? null
                     : () {
-                        // في المرحلة دي: resend = رجوع basicInfo ثم next
-                        // أو اعمل method resend في controller لاحقًا
                         _start();
                         c.back(); // يرجع basic
                       },
                 child: Text(
-                  _seconds > 0 ? 'Resend in 00:${_seconds.toString().padLeft(2, '0')}' : 'Resend',
+                  _seconds > 0
+                      ? 'Resend in 00:${_seconds.toString().padLeft(2, '0')}'
+                      : 'Resend',
                 ),
               ),
             ],
@@ -103,8 +112,8 @@ class _RegPhoneOtpScreenState extends ConsumerState<RegPhoneOtpScreen> {
 
           SharedButton(
             label: 'Verify',
-            onPressed: s.isLoading ? null : () => c.next(),
-            isLoading: s.isLoading,
+            onPressed: isLoading ? null : () => c.next(),
+            isLoading: isLoading,
             variant: SharedButtonVariant.filled,
             rounded: false,
             radius: 14,

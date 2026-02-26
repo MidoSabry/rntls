@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_core/shared_core.dart';
 
 import '../controller/registration_controller.dart';
-import '../controller/registration_state.dart';
+import '../controller/registration_vm.dart';
 import '../../domain/registration_step.dart';
+
 
 import 'steps/reg_basic_info_screen.dart';
 import 'steps/reg_phone_otp_screen.dart';
@@ -33,13 +35,16 @@ class RegistrationFlowScreen extends ConsumerWidget {
     };
   }
 
-  int _totalSteps() => 6; 
+  int _totalSteps() => 6;
 
   int _mainProgressStep(RegistrationStep s) {
     return switch (s) {
       RegistrationStep.basicInfo => 1,
       RegistrationStep.phoneOtp => 2,
-      RegistrationStep.emailSend || RegistrationStep.emailOtp || RegistrationStep.emailVerified => 3,
+      RegistrationStep.emailSend ||
+      RegistrationStep.emailOtp ||
+      RegistrationStep.emailVerified =>
+        3,
       RegistrationStep.createPassword => 4,
       RegistrationStep.address => 5,
       RegistrationStep.identity || RegistrationStep.submit || RegistrationStep.done => 6,
@@ -48,10 +53,17 @@ class RegistrationFlowScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final RegistrationState state = ref.watch(registrationControllerProvider);
+    // ✅ 1) watch ViewState<RegistrationVM>
+    final vs = ref.watch(registrationControllerProvider);
     final ctrl = ref.read(registrationControllerProvider.notifier);
 
-    final Widget body = switch (state.step) {
+    // ✅ 2) get VM from wrapper (fallback)
+    final RegistrationVM vm = vs.dataOrNull ?? const RegistrationVM();
+
+    // ✅ 3) loading comes from wrapper type
+    final bool isLoading = vs is ViewLoading<RegistrationVM>;
+
+    final Widget body = switch (vm.step) {
       RegistrationStep.basicInfo => const RegBasicInfoScreen(),
       RegistrationStep.phoneOtp => const RegPhoneOtpScreen(),
       RegistrationStep.emailSend => const RegEmailSendScreen(),
@@ -60,7 +72,7 @@ class RegistrationFlowScreen extends ConsumerWidget {
       RegistrationStep.createPassword => const RegCreatePasswordScreen(),
       RegistrationStep.address => const RegAddressScreen(),
       RegistrationStep.identity => const RegIdentityScreen(),
-      RegistrationStep.submit => const SizedBox.shrink(), // loading overlay
+      RegistrationStep.submit => const SizedBox.shrink(),
       RegistrationStep.done => const RegDoneScreen(),
     };
 
@@ -72,11 +84,11 @@ class RegistrationFlowScreen extends ConsumerWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: state.isLoading
+          onPressed: isLoading
               ? null
               : () {
-                  if (state.step == RegistrationStep.basicInfo ||
-                      state.step == RegistrationStep.done) {
+                  if (vm.step == RegistrationStep.basicInfo ||
+                      vm.step == RegistrationStep.done) {
                     Navigator.of(context).pop();
                     return;
                   }
@@ -95,14 +107,14 @@ class RegistrationFlowScreen extends ConsumerWidget {
             children: [
               _ProgressHeader(
                 totalSteps: _totalSteps(),
-                currentStep: _mainProgressStep(state.step),
+                currentStep: _mainProgressStep(vm.step),
               ),
               const SizedBox(height: 8),
               Expanded(
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 220),
                   child: KeyedSubtree(
-                    key: ValueKey(_stepIndex(state.step)),
+                    key: ValueKey(_stepIndex(vm.step)),
                     child: body,
                   ),
                 ),
@@ -110,7 +122,8 @@ class RegistrationFlowScreen extends ConsumerWidget {
             ],
           ),
 
-          if (state.isLoading || state.step == RegistrationStep.submit)
+          // ✅ 4) overlay based on wrapper loading
+          if (isLoading || vm.step == RegistrationStep.submit)
             const Positioned.fill(
               child: IgnorePointer(
                 child: ColoredBox(
